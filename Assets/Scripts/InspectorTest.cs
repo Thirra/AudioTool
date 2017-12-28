@@ -5,19 +5,16 @@ using UnityEngine.Events;
 using System;
 using System.Reflection;
 
-//[System.Serializable]
-//public class AudioInspectorTest
-//{
-//    public MonoBehaviour theScript;
-//    public List<MethodInfo> itsFunctions;
-//}
+[System.Serializable]
+public class AudioInspectorTest
+{
+    public UnityAction thisFunction;
+}
 
 [ExecuteInEditMode]
 public class InspectorTest : MonoBehaviour
 {
     public AudioSource myAudioSource;
-
-    //public List<AudioInspectorTest> audioEvents = new List<AudioInspectorTest>();
 
     public UnityAction someEvent;
 
@@ -29,21 +26,20 @@ public class InspectorTest : MonoBehaviour
 
     MethodInfo[] methodInfos;
 
-    
+    public delegate void ChangeEvent();
+    public static event ChangeEvent changeEvent;
 
-	// Use this for initialization
-	void Start ()
+    // Use this for initialization
+    void Start ()
     {
-        //audioEvents[0].thisFunction.changeEvent += PlaySound;
+        changeEvent += PlaySound;
 
-        //MethodBase methodBase = MethodBase.GetCurrentMethod();
-        //Debug.Log(methodBase.Name);
 
         methodInfos = typeof(InspectorTest).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
         
         foreach(MethodInfo methodInfo in methodInfos)
         {
-            Debug.Log(methodInfo.Name);
+            //Debug.Log(methodInfo.Name);
         }
 
         //Get the method names that have been called - compare it to the one in UnityEvent?
@@ -55,30 +51,36 @@ public class InspectorTest : MonoBehaviour
 	// Update is called once per frame
 	void Update ()
     {
-        if (Input.GetKeyDown("e"))
+        //if (Input.GetKeyDown("e"))
+        //{
+        //    PlaySound();
+        //}   
+    }
+
+    public void ReceivingSound()
+    {
+        if (changeEvent != null) //Checking is anyone is "on the other line"
         {
-            PlaySound();
+            //Sending the sound event
+            Debug.Log("Sending the sound event");
+            changeEvent();
+
+            //Checking which function sent the sound event - OH MY GOD THIS ACTUALLY FUCKING WORKS
+            System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace();
+            string functionCalled = stackTrace.GetFrame(1).GetMethod().Name;
+            CompareFunctionNames(functionCalled);
         }
+    }
 
-        System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace(1);
-
-        Debug.Log(stackTrace.GetFrame(0).GetMethod().Name);
-        //Debug.Log("this works");
+    public void CompareFunctionNames(string functionName)
+    {
+        Debug.Log("Hey look at me I'm comparing function names with" + functionName);
     }
 
     public void PlaySound()
     {
-        //Debug.Log("A sound is played for a function");
-    }
 
-    //public void TestFunction(UnityEvent unityEvent)
-    //{
-    //    if (changeEvent != null) //Checking is anyone is "on the other line"
-    //    {
-    //        Debug.Log("Sending the sound event");
-    //        changeEvent();
-    //    }
-    //}
+    }
 
     public void DoProcessing()
     {

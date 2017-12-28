@@ -4,33 +4,28 @@ using UnityEngine;
 
 public class FunctionTest : MonoBehaviour
 {
-    //Sound things?
-    public delegate void ChangeEvent();
-    public static event ChangeEvent changeEvent;
+    //Sound things
+    public InspectorTest inspectorTest;
 
     // Use this for initialization
     void Start ()
     {
-		
+        if (inspectorTest == null)
+            inspectorTest = GetComponentInChildren<InspectorTest>();
 	}
 	
 	// Update is called once per frame
 	void Update ()
     {
-        //if (Input.GetKeyDown("e"))
-        //{
-        //    TestFunction();
-        //}
+        if (Input.GetKeyDown("e"))
+        {
+            TestFunction();
+        }
     }
 
     public void TestFunction()
     {
         Debug.Log("Hey I'm doing something");
-
-        if (changeEvent != null) //Checking is anyone is "on the other line"
-        {
-            Debug.Log("Sending the sound event");
-            changeEvent();
-        }
+        inspectorTest.ReceivingSound();
     }
 }
