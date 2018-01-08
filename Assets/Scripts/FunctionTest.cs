@@ -10,6 +10,7 @@ public class FunctionTest : MonoBehaviour
     // Use this for initialization
     void Start ()
     {
+        //Checking for the sound things
         if (inspectorTest == null)
             inspectorTest = GetComponentInChildren<InspectorTest>();
 	}
@@ -25,7 +26,7 @@ public class FunctionTest : MonoBehaviour
 
     public void TestFunction()
     {
-        Debug.Log("Hey I'm doing something");
+        //More sound things
         inspectorTest.ReceivingSound();
     }
 }

@@ -2,13 +2,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using System;
 using System.Reflection;
 
+/// <summary>
+/// How the audio for a specific function should be played
+/// When added to - add a specific switch in the custom editor
+/// </summary>
+public enum AudioFunctions
+{
+    PlayOneShot,
+    PlayRandom,
+    PlayAfterDelay,
+    PlayPauseOverTime
+};
+
+/// <summary>
+/// The class that holds all the information for the audio that will play for a specific function
+/// </summary>
 [System.Serializable]
 public class AudioInspectorTest
 {
-    public UnityAction thisFunction;
+    public string name;
+    public UnityEvent thisFunction;
+    public List<AudioClip> thisAudio = new List<AudioClip>();
+    public AudioFunctions audioType;
+    public float delayAmount;
+    public int repeatAmount;
 }
 
 [ExecuteInEditMode]
@@ -16,75 +35,103 @@ public class InspectorTest : MonoBehaviour
 {
     public AudioSource myAudioSource;
 
-    public UnityAction someEvent;
-
-    public static event Action<UnityAction> ToggleEvent;
-
-    //public List<MethodInfo> methods = new List<MethodInfo>();
-    //public MonoBehaviour monoBehav;
-    //BindingFlags flags = BindingFlags.Instance | BindingFlags.Public;
-
+    //The list of the classes for every function needing audio on the gameobject
+    public List<AudioInspectorTest> functions;
+    
+    //Getting access to the method data
     MethodInfo[] methodInfos;
 
-    public delegate void ChangeEvent();
-    public static event ChangeEvent changeEvent;
+    //Creating an event for functions to subscribe to, to see when a specific function has been called
+    public delegate void FunctionCalled();
+    public static event FunctionCalled functionCalled;
 
-    // Use this for initialization
-    void Start ()
+    private void Start ()
     {
-        changeEvent += PlaySound;
+        //Subscribing to the event 
+        functionCalled += CheckFunction;
 
-
+        //Don't actually need this but it was pretty cool to learn about
         methodInfos = typeof(InspectorTest).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-        
-        foreach(MethodInfo methodInfo in methodInfos)
-        {
-            //Debug.Log(methodInfo.Name);
-        }
-
-        //Get the method names that have been called - compare it to the one in UnityEvent?
-    }
-
-	
-    // -- These are all to call the function needed -- //
-
-	// Update is called once per frame
-	void Update ()
-    {
-        //if (Input.GetKeyDown("e"))
-        //{
-        //    PlaySound();
-        //}   
     }
 
     public void ReceivingSound()
     {
-        if (changeEvent != null) //Checking is anyone is "on the other line"
-        {
-            //Sending the sound event
-            Debug.Log("Sending the sound event");
-            changeEvent();
+        functionCalled();
+    }
 
-            //Checking which function sent the sound event - OH MY GOD THIS ACTUALLY FUCKING WORKS
-            System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace();
-            string functionCalled = stackTrace.GetFrame(1).GetMethod().Name;
-            CompareFunctionNames(functionCalled);
+    /// <summary>
+    /// Checking the function that is called, and the functions within the list of audio functions, and comparing them by name to check if there is a match.
+    /// If there is a match, continue to the play sound function.
+    /// </summary>
+    public void CheckFunction()
+    {
+        //Checking which function sent the sound event - OH MY GOD THIS ACTUALLY FUCKING WORKS
+        System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace();
+
+        //Change the "GetFrame" to however deep you need to go to find the function that was called: TestFunction -> Receiving Sound -> this
+        string functionCalled = stackTrace.GetFrame(2).GetMethod().Name;
+        for (int index = 0; index < functions.Count; index++)
+        {
+            //If the function called and the function in the list of audio functions are the same...
+            if (functionCalled == functions[index].thisFunction.GetPersistentMethodName(0))
+            {
+                //Play the appropriate sound
+                PlaySound(index);
+            }
+            else
+            {
+                //Do nothing
+            }
         }
     }
 
-    public void CompareFunctionNames(string functionName)
+    /// <summary>
+    /// Playing the audio associated with the function that has been called.
+    /// </summary>
+    /// <param name="functionIndex"></param>
+    public void PlaySound(int functionIndex)
     {
-        Debug.Log("Hey look at me I'm comparing function names with" + functionName);
+        //The enumerator of all the possible sound types currently available. All are pretty self explanatory
+        switch (functions[functionIndex].audioType)
+        {
+            case AudioFunctions.PlayOneShot:
+                {
+                    myAudioSource.clip = functions[functionIndex].thisAudio[0];
+                    myAudioSource.Play();
+                }
+                break;
+                
+            case AudioFunctions.PlayRandom:
+                {
+                    int randomIndex = Random.Range(0, functions[functionIndex].thisAudio.Count);
+                    myAudioSource.clip = functions[functionIndex].thisAudio[randomIndex];
+                    myAudioSource.Play();
+                }
+                break;
+
+            case AudioFunctions.PlayAfterDelay:
+                {
+                    myAudioSource.clip = functions[functionIndex].thisAudio[0];
+                    StartCoroutine(audioDelay(functions[functionIndex].delayAmount));
+                }
+                break;
+
+            case AudioFunctions.PlayPauseOverTime:
+                {
+                    myAudioSource.clip = functions[functionIndex].thisAudio[0];
+                    for (int index = 0; index < functions[functionIndex].repeatAmount; index++)
+                    {
+                        StartCoroutine(audioDelay(functions[functionIndex].delayAmount));
+                    }
+                    Debug.Log("Finished");
+                }
+                break;
+        }
     }
 
-    public void PlaySound()
+    public IEnumerator audioDelay(float delay)
     {
-
+        yield return new WaitForSeconds(delay);
+        myAudioSource.Play();
     }
-
-    public void DoProcessing()
-    {
-
-    }
-
 }
